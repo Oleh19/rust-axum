@@ -1,9 +1,43 @@
+use axum::{
+    Json, Router,
+    extract::{Path, Query},
+    http::StatusCode,
+    routing::get,
+};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use axum::{
+#[derive(Serialize, Clone)]
+struct Task {
+    id: u32,
+    title: String,
+    done: bool,
+}
 
-    Router, extract::{Path, Query}, routing::get
-};
+#[derive(Deserialize)]
+struct CreateTask {
+    title: String,
+}
+
+fn seed_tasks() -> Vec<Task> {
+    vec![
+        Task {
+            id: 1,
+            title: "Task 1".to_string(),
+            done: false,
+        },
+        Task {
+            id: 2,
+            title: "Task 2".to_string(),
+            done: true,
+        },
+        Task {
+            id: 3,
+            title: "Task 3".to_string(),
+            done: false,
+        },
+    ]
+}
 
 #[tokio::main]
 async fn main() {
@@ -28,18 +62,26 @@ async fn health() -> &'static str {
     "ok"
 }
 
-async fn list_tasks(Query(params): Query<HashMap<String, String>>) -> String {
-  let filter = params
-  .get("done")
-  .map_or("everything".to_string(), |v| format!("done={}", v));
-
-  format!("listing tasks with filter: {}", filter)
+async fn list_tasks() -> Json<Vec<Task>> {
+    Json(seed_tasks())
 }
 
-async fn create_task() -> &'static str {
-    "a new task will be created here"
+async fn create_task(Json(payload): Json<CreateTask>) -> (StatusCode, Json<Task>) {
+    let tasks = Task {
+        id: 99,
+        title: payload.title,
+        done: false,
+    };
+
+    (StatusCode::CREATED, Json(tasks))
 }
 
-async fn get_task(Path(id): Path<u32>) -> String {
-    format!("you asked for task with id: {}", id)
+async fn get_task(Path(id): Path<u32>) -> Result<Json<Task>, StatusCode> {
+    let tasks = seed_tasks();
+
+    tasks
+        .into_iter()
+        .find(|t| t.id == id)
+        .map(Json)
+        .ok_or(StatusCode::NOT_FOUND)
 }
