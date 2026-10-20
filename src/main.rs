@@ -1,8 +1,11 @@
-use axum::{routing::get, Router};
+use axum::{Router, routing::get};
 
 #[tokio::main]
 async fn main() {
-    let app = Router::new().route("/", get(root));
+    let app = Router::new()
+        .route("/", get(root))
+        .route("/health", get(health))
+        .route("/tasks", get(list_tasks).post(create_task));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 
@@ -13,4 +16,16 @@ async fn main() {
 
 async fn root() -> &'static str {
     "task is alive"
+}
+
+async fn health() -> &'static str {
+    "ok"
+}
+
+async fn list_tasks() -> &'static str {
+    "a list of tasks will go here"
+}
+
+async fn create_task() -> &'static str {
+    "a new task will be created here"
 }
